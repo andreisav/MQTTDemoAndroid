@@ -66,7 +66,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private static final String TOPIC_PUB = "as_demo_mqtt/devices/telemetry";
     private static final String TOPIC_SUB = "as_demo_mqtt/devices/commands";
     private static final String MQTT_HOST = "tcp://test.mosquitto.org:1883"; //TODO
-//    private static final String MQTT_HOST = "tcp://iot.eclipse.org:1883"; //TODO
+//    private static final String MQTT_HOST = "tcp://iot.eclipse.org:1883"; ///TODO
     private boolean mSending = true;
     private boolean mTracking = true;
     private MotionState mMotionState = MotionState.UNKNOWN;
