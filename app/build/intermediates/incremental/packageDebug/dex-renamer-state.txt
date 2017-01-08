@@ -1,7 +1,0 @@
-#Sat Jan 07 15:50:23 PST 2017
-base.0=/Users/andrei/Projects/MQTTDemoAndroid/app/build/intermediates/transforms/dex/debug/folders/1000/10/instant-run_dc5d085a8cc0d22602258d3437cfc75dbfacafb5
-renamed.1=classes.dex
-renamed.0=classes2.dex
-file.1=/Users/andrei/Projects/MQTTDemoAndroid/app/build/intermediates/transforms/dex/debug/folders/1000/10/instant-run-bootstrap_d14992b7ac0fab16f168bca87257e682f4276137/classes.dex
-base.1=/Users/andrei/Projects/MQTTDemoAndroid/app/build/intermediates/transforms/dex/debug/folders/1000/10/instant-run-bootstrap_d14992b7ac0fab16f168bca87257e682f4276137
-file.0=/Users/andrei/Projects/MQTTDemoAndroid/app/build/intermediates/transforms/dex/debug/folders/1000/10/instant-run_dc5d085a8cc0d22602258d3437cfc75dbfacafb5/classes.dex
