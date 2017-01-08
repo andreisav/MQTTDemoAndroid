@@ -31,7 +31,6 @@ import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 
 
-//TODO  fix logging
 public class MainActivity extends AppCompatActivity implements SensorEventListener {
 
     public enum MotionState {
@@ -147,7 +146,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 Log.d(TAG, "Delivery Complete!");
             }
         });
-        // TODO investigate service launch
         try {
             mMQTTAndroidClient.connect(null, new IMqttActionListener() {
                 @Override

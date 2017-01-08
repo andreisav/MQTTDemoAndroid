@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">MQTTTest</string>
+    <string name="app_name">MQTTDemo</string>
     <string name="action_settings">Settings</string>
     <string name="send">Send</string>
     <string name="enter_text">enter text</string>
