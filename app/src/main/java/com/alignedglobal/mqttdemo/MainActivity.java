@@ -23,6 +23,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import org.eclipse.paho.android.service.MqttAndroidClient;
+import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.IMqttActionListener;
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.IMqttToken;
@@ -107,7 +108,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         //TODO configure
         mMQTTAndroidClient = new MqttAndroidClient(this.getApplicationContext(), MQTT_HOST, "as_demo_mqtt_client_"+mDeviceId);
         mMQTTAndroidClient.setCallback(new MqttCallback() {
-            //TODO need reconnect
             @Override
             public void connectionLost(Throwable cause) {
                 Log.d(TAG, "Connection was lost!", cause);
@@ -146,28 +146,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 Log.d(TAG, "Delivery Complete!");
             }
         });
-        try {
-            mMQTTAndroidClient.connect(null, new IMqttActionListener() {
-                @Override
-                public void onSuccess(IMqttToken asyncActionToken) {
-                    Log.d(TAG, "Connection Success!");
-                    try {
-                        Log.d(TAG, "Subscribing to devices/commands/" + mDeviceId);
-                        mMQTTAndroidClient.subscribe(TOPIC_SUB  + "/" + mDeviceId, 0);
-                        Log.d(TAG, "Subscribed to: "  + TOPIC_SUB  + "/" + mDeviceId);
-                    } catch (MqttException ex) {
-                        Log.e(TAG, "MQQT Connection Exception: " + ex.getMessage());
-                    }
-                }
 
-                @Override
-                public void onFailure(IMqttToken asyncActionToken, Throwable ex) {
-                    Log.e(TAG,  ex.getMessage(), ex);
-                }
-            });
-        } catch (MqttException ex) {
-            Log.w(TAG, "MQQT Exception: " + ex.getMessage());
-        }
+        //MQTT connection
+        doConnect();
 
         btnSend.setOnClickListener(new OnClickListener() {
             public void onClick(View v) {
@@ -323,6 +304,34 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             mMQTTAndroidClient.publish(topic, new MqttMessage(msg.getBytes()));
         } catch (MqttException ex) {
             Log.e(TAG, "Failed to send: " + ex.getMessage(), ex);
+        }
+    }
+
+    private void doConnect() {
+        try {
+            MqttConnectOptions options = new MqttConnectOptions();
+            options.setAutomaticReconnect(true);
+
+            mMQTTAndroidClient.connect(options, null, new IMqttActionListener() {
+                @Override
+                public void onSuccess(IMqttToken asyncActionToken) {
+                    Log.d(TAG, "Connection Success!");
+                    try {
+                        Log.d(TAG, "Subscribing to devices/commands/" + mDeviceId);
+                        mMQTTAndroidClient.subscribe(TOPIC_SUB  + "/" + mDeviceId, 0);
+                        Log.d(TAG, "Subscribed to: "  + TOPIC_SUB  + "/" + mDeviceId);
+                    } catch (MqttException ex) {
+                        Log.e(TAG, "MQQT Connection Exception: " + ex.getMessage());
+                    }
+                }
+
+                @Override
+                public void onFailure(IMqttToken asyncActionToken, Throwable ex) {
+                    Log.e(TAG,  ex.getMessage(), ex);
+                }
+            });
+        } catch (MqttException ex) {
+            Log.w(TAG, "MQQT Exception: " + ex.getMessage());
         }
     }
 
