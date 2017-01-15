@@ -1,15 +1,21 @@
 package com.alignedglobal.mqttdemo;
 
+import android.Manifest;
+import android.content.pm.PackageManager;
+import android.location.LocationManager;
 import android.media.RingtoneManager;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Button;
+import android.widget.Toast;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.view.View.OnClickListener;
@@ -18,6 +24,8 @@ import android.hardware.SensorManager;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorEvent;
 import android.util.Log;
+import android.location.Location;
+import android.location.LocationListener;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -32,7 +40,7 @@ import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 
 
-public class MainActivity extends AppCompatActivity implements SensorEventListener {
+public class MainActivity extends AppCompatActivity implements SensorEventListener, LocationListener {
 
     public enum MotionState {
         UNKNOWN,
@@ -43,13 +51,15 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     EditText etText;
     Button btnSend;
     TextView txtTemp;
+    TextView txtLocation;
+    TextView textSending;
     TextView txtMessages;
     TextView txtMotionState;
     TextView txtSending;
-    private  MqttAndroidClient mMQTTAndroidClient;
+    private MqttAndroidClient mMQTTAndroidClient;
     private SensorManager mSensorManager;
     private Sensor mSensorAccel;
-//    private Sensor _sensorGyro;
+    //    private Sensor _sensorGyro;
 //    private Sensor _sensorMagnetic;
     private int hitCount = 0;
     private double hitSum = 0;
@@ -63,14 +73,18 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private final double THRESHOLD = 0.2; // change this threshold as you want, higher is more spike movement
 
     private static final String TAG = MainActivity.class.getSimpleName();
-    private static final String TOPIC_PUB = "as_demo_mqtt/devices/telemetry";
-    private static final String TOPIC_SUB = "as_demo_mqtt/devices/commands";
+    private static final String TOPIC_PUB = "as_demo_mqtt/devices/%s/telemetry";
+    private static final String TOPIC_SUB = "as_demo_mqtt/devices/%s/commands";
     private static final String MQTT_HOST = "tcp://test.mosquitto.org:1883"; //TODO
-//    private static final String MQTT_HOST = "tcp://iot.eclipse.org:1883"; ///TODO
+    //    private static final String MQTT_HOST = "tcp://iot.eclipse.org:1883"; ///TODO
     private boolean mSending = true;
     private boolean mTracking = true;
     private MotionState mMotionState = MotionState.UNKNOWN;
     private String mDeviceId = "234389908509";//TODO figure out which one to use
+    protected LocationManager mLocationManager;
+    private static final long MIN_DISTANCE_CHANGE_FOR_UPDATES = 5;
+    private static final long MIN_TIME_BW_UPDATES = 1000 * 60 * 1;
+    Location mLocation;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -89,24 +103,53 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             }
         });
 
-        txtTemp = (TextView)findViewById(R.id.txtTemp);
-        txtMessages = (TextView)findViewById(R.id.txtMessages);
-        txtMotionState = (TextView)findViewById(R.id.txtMotionState);
-        txtSending = (TextView)findViewById(R.id.textSending);
-        etText = (EditText)findViewById(R.id.editTemp);
-        btnSend = (Button)findViewById(R.id.btnSend);
+        txtTemp = (TextView) findViewById(R.id.txtTemp);
+        txtMessages = (TextView) findViewById(R.id.txtMessages);
+        txtMotionState = (TextView) findViewById(R.id.txtMotionState);
+        txtSending = (TextView) findViewById(R.id.textSending);
+        etText = (EditText) findViewById(R.id.editTemp);
+        btnSend = (Button) findViewById(R.id.btnSend);
 
         // get sensorManager and initialise sensor listeners
         mSensorManager = (SensorManager) this.getSystemService(SENSOR_SERVICE);
-        mSensorAccel =  mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        mSensorAccel = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
 //        _sensorGyro =  mSensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
 //        _sensorMagnetic =  mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
         mAccel = 0.00f;
         mAccelCurrent = SensorManager.GRAVITY_EARTH;
         mAccelLast = SensorManager.GRAVITY_EARTH;
 
+        txtLocation = (TextView) findViewById(R.id.txtLocation);
+
+        //TODO
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+            //return;
+            ActivityCompat.requestPermissions( this, new String[] {  android.Manifest.permission.ACCESS_COARSE_LOCATION,  android.Manifest.permission.ACCESS_FINE_LOCATION},
+                   99);
+            mLocationManager = (LocationManager) this.getSystemService(LOCATION_SERVICE);
+            mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, MIN_TIME_BW_UPDATES, MIN_DISTANCE_CHANGE_FOR_UPDATES, this);
+        }
+        else {
+            mLocationManager = (LocationManager) this.getSystemService(LOCATION_SERVICE);
+            mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, MIN_TIME_BW_UPDATES, MIN_DISTANCE_CHANGE_FOR_UPDATES, this);
+        }
+
+        mLocation = mLocationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+
+        if (mLocation != null) {
+            txtLocation.setText("Latitude:" + mLocation.getLatitude() + " Longitude:" + mLocation.getLongitude());
+        }
+
+
         //TODO configure
-        mMQTTAndroidClient = new MqttAndroidClient(this.getApplicationContext(), MQTT_HOST, "as_demo_mqtt_client_"+mDeviceId);
+        mMQTTAndroidClient = new MqttAndroidClient(this.getApplicationContext(), MQTT_HOST, "as_demo_mqtt_client_" + mDeviceId);
         mMQTTAndroidClient.setCallback(new MqttCallback() {
             @Override
             public void connectionLost(Throwable cause) {
@@ -128,11 +171,12 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                         //TODO send ack back
                     } else if ("RESUME".equals(cmd)) {
                         setSending(true);
-                    }
-                    else if ("SOUND".equals(cmd)) {
+                    } else if ("SOUND".equals(cmd)) {
                         android.net.Uri notification = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
                         android.media.MediaPlayer mp = android.media.MediaPlayer.create(getApplicationContext(), notification);
                         mp.start();
+                    } else if ("LOCATION".equals(cmd)) {
+                        publishLocation();
                     }
                 }
 
@@ -150,28 +194,38 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         //MQTT connection
         doConnect();
 
+
         btnSend.setOnClickListener(new OnClickListener() {
             public void onClick(View v) {
+
                 String str = etText.getText().toString();
-                // publish
-                Log.d(TAG, "Publishing message..");
                 JSONObject json = new JSONObject();
                 try {
-                    json.put("did", mDeviceId);
-                    json.put("tx", System.currentTimeMillis());
-                    json.put("telemetry", new JSONObject().put("temp", str));
-                }
-                catch (JSONException ex) {
+                    json.put("temp", str);
+                    json.put("unit", "F");
+                } catch (JSONException ex) {
                     Log.e(TAG, "MQQT Exception: " + ex.getMessage(), ex);
                 }
-
-                publishMessage(TOPIC_PUB + "/" + mDeviceId, json.toString());
-                txtMessages.setText("Out:" + json.toString() + "\n" + txtMessages.getText());
-
+                // publish
+                Log.d(TAG, "Publishing temp message..");
+                publishTelemetryMessage("temp", json);
                 txtTemp.setText(str);
                 etText.setText("");
             }
         });
+    }
+
+    private void publishTelemetryMessage(String key, JSONObject data) {
+        JSONObject json = new JSONObject();
+        try {
+            json.put("did", mDeviceId);
+            json.put("tx", System.currentTimeMillis());
+            json.put("telemetry", new JSONObject().put(key, data));
+            publishMessage(String.format(TOPIC_PUB, mDeviceId), json.toString());
+            txtMessages.setText("Out:" + json.toString() + "\n" + txtMessages.getText());
+        } catch (JSONException ex) {
+            Log.e(TAG, "MQQT Exception: " + ex.getMessage(), ex);
+        }
     }
 
     @Override
@@ -207,11 +261,52 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         mSensorManager.unregisterListener(this);
     }
 
+
+    @Override
+    public void onLocationChanged(Location location) {
+        mLocation = location;
+        Log.d("Location changed: %s", "Latitude:" + location.getLatitude() + ", Longitude:" + location.getLongitude());
+        Log.d(TAG, "Publishing location message..");
+        publishLocation();
+
+    }
+
+    private void publishLocation() {
+        if (mLocation == null)
+            return;
+        txtLocation.setText("Latitude:" + mLocation.getLatitude() + " Longitude:" + mLocation.getLongitude());
+        JSONObject json = new JSONObject();
+        try {
+            json.put("lat", mLocation.getLatitude());
+            json.put("lat", mLocation.getLatitude());
+            json.put("long", mLocation.getLongitude());
+            publishTelemetryMessage("loc", json);
+        } catch (JSONException ex) {
+            Log.e(TAG, "MQQT Exception: " + ex.getMessage(), ex);
+        }
+    }
+
+    @Override
+    public void onProviderDisabled(String provider) {
+        Log.d("Location","disable");
+    }
+
+    @Override
+    public void onProviderEnabled(String provider) {
+        Log.d("Location:","enable");
+    }
+
+    @Override
+    public void onStatusChanged(String provider, int status, Bundle extras) {
+        Log.d("Location", "status");
+    }
+
+
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
     }
 
     public void onSensorChanged(SensorEvent event) {
-        switch(event.sensor.getType()) {
+        switch (event.sensor.getType()) {
             case Sensor.TYPE_ACCELEROMETER:
                 Log.d(TAG, "TYPE_ACCELEROMETER");
                 mGravity = event.values.clone();
@@ -237,25 +332,18 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                         mMotionState = MotionState.MOVING;
                         txtMotionState.setText("Moving"); //TODO
                     } else {
-                        Log.d(TAG, "Stop Walking");
+                        Log.d(TAG, "Stopped moving");
                         mMotionState = MotionState.STOPPED;
                         txtMotionState.setText("Stopped"); //TODO
                     }
 
                     JSONObject json = new JSONObject();
                     try {
-                        json.put("did", mDeviceId);
-                        json.put("tx", System.currentTimeMillis());
-                        json.put("telemetry", new JSONObject().put("sensor", "accel").put("state", mMotionState).put("x", x).put("y", y).put("z", z));
-                    }
-                    catch (JSONException ex) {
+                        json.put("state", mMotionState).put("x", x).put("y", y).put("z", z);
+                        publishTelemetryMessage("accel", json);
+                    } catch (JSONException ex) {
                         Log.e(TAG, "JSON Exception: " + ex.getMessage());
                     }
-
-                    //TODO possibly make async to make sure we're not blocking
-                    publishMessage(TOPIC_PUB + "/" + mDeviceId, json.toString());
-                    txtMessages.setText("Out:" + json.toString() + "\n" + txtMessages.getText());
-
 
                     hitCount = 0;
                     hitSum = 0;
@@ -264,7 +352,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 break;
 
             case Sensor.TYPE_GYROSCOPE:
-                Log.d(TAG,"TYPE_GYROSCOPE");
+                Log.d(TAG, "TYPE_GYROSCOPE");
                 // process gyro data
 //                gyroFunction(event);
                 break;
@@ -276,6 +364,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 break;
         }
     }
+
     private void initListeners() {
         mSensorManager.registerListener(this,
                 mSensorAccel, SensorManager.SENSOR_DELAY_NORMAL);
@@ -293,11 +382,11 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     private void setSending(boolean on) {
         mSending = on;
-        txtSending.setText(mSending?"Sending":"Not Sending");
+        txtSending.setText(mSending ? "Sending" : "Not Sending");
     }
 
     private void publishMessage(String topic, String msg) {
-        if (!mSending)
+        if (!mSending || !mMQTTAndroidClient.isConnected())
             return;
 
         try {
@@ -318,8 +407,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                     Log.d(TAG, "Connection Success!");
                     try {
                         Log.d(TAG, "Subscribing to devices/commands/" + mDeviceId);
-                        mMQTTAndroidClient.subscribe(TOPIC_SUB  + "/" + mDeviceId, 0);
-                        Log.d(TAG, "Subscribed to: "  + TOPIC_SUB  + "/" + mDeviceId);
+                        mMQTTAndroidClient.subscribe(String.format(TOPIC_SUB, mDeviceId), 0);
+                        Log.d(TAG, "Subscribed to: " + String.format(TOPIC_SUB, mDeviceId) + "/" + mDeviceId);
+                        publishLocation();
                     } catch (MqttException ex) {
                         Log.e(TAG, "MQQT Connection Exception: " + ex.getMessage());
                     }
@@ -327,7 +417,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
                 @Override
                 public void onFailure(IMqttToken asyncActionToken, Throwable ex) {
-                    Log.e(TAG,  ex.getMessage(), ex);
+                    Log.e(TAG, ex.getMessage(), ex);
                 }
             });
         } catch (MqttException ex) {

@@ -25,21 +25,11 @@
         <requestFocus></requestFocus>
 </EditText>
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Messages:"
-        android:id="@+id/lblMessages"
-        android:layout_marginTop="14dp"
-        android:layout_below="@+id/editTemp"
-        android:layout_alignParentStart="true" />
-
     <EditText
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:inputType="textMultiLine"
         android:ems="10"
-        android:layout_below="@+id/lblMessages"
         android:layout_alignParentStart="true"
         android:id="@+id/txtMessages"
         android:layout_alignParentEnd="true"
@@ -48,7 +38,8 @@
         android:scrollHorizontally="true"
         android:gravity="top|left"
         android:scrollbars="horizontal|vertical"
-        android:nestedScrollingEnabled="true" />
+        android:nestedScrollingEnabled="true"
+        android:layout_below="@+id/lblMessages" />
 
     <TextView
         android:layout_width="wrap_content"
@@ -58,14 +49,6 @@
         tools:text="0"
         android:layout_alignParentTop="true"
         android:layout_toEndOf="@+id/lblTemp" />
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Motion:"
-        android:id="@+id/lblMotionStatus"
-        android:layout_below="@+id/editTemp"
-        android:layout_alignParentStart="true" />
 
     <Button
         android:id="@+id/btnSend"
@@ -87,17 +70,53 @@
         android:layout_height="wrap_content"
         android:text="Stopped"
         android:id="@+id/txtMotionState"
-        android:layout_toEndOf="@+id/lblMessages"
+        tools:text="Stopped"
         android:layout_below="@+id/editTemp"
-        tools:text="Stopped" />
+        android:layout_alignStart="@+id/txtLocation"
+        android:layout_marginTop="17dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Motion:"
+        android:id="@+id/lblMotionStatus"
+        android:layout_alignBaseline="@+id/txtMotionState"
+        android:layout_alignBottom="@+id/txtMotionState"
+        android:layout_alignParentStart="true" />
+
+    <TextView
+        android:text="Location"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/txtLocation"
+        android:layout_below="@+id/txtMotionState"
+        android:layout_toEndOf="@+id/lblMessages" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Messages:"
+        android:id="@+id/lblMessages"
+        android:layout_marginTop="11dp"
+        android:layout_below="@+id/lblLoc"
+        android:layout_alignParentStart="true" />
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:id="@+id/textSending"
         tools:text="Sending"
-        android:layout_below="@+id/txtMotionState"
-        android:layout_toEndOf="@+id/lblMessages" />
+        android:layout_alignBaseline="@+id/lblMessages"
+        android:layout_alignBottom="@+id/lblMessages"
+        android:layout_alignEnd="@+id/txtLocation" />
+
+    <TextView
+        android:text="Location:"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/lblLoc"
+        android:layout_below="@+id/lblMotionStatus"
+        android:layout_alignParentStart="true" />
 
 
     <!--android:text="@string/enter_text" android:inputType="text" />-->
